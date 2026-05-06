@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Payroll Calculator</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1c1c1e;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .phone {
+      width: 340px;
+      background: #000;
+      border-radius: 54px;
+      padding: 2rem 1.5rem;
+      box-shadow: 0 40px 80px rgba(0,0,0,0.8), inset 0 0 0 1px rgba(255,255,255,0.12);
+    }
+
+    .screen {
+      padding: 1.5rem 1rem 1rem;
+      margin-bottom: 1.25rem;
+      min-height: 160px;
+    }
+
+    .screen-label {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #636366;
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+
+    #results { display: none; }
+
+    .inputs-summary {
+      font-size: 12px;
+      color: #636366;
+      text-align: right;
+      margin-bottom: 0.75rem;
+      line-height: 1.7;
+    }
+
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 5px 0;
+    }
+
+    .result-label { font-size: 13px; color: #8e8e93; }
+    .result-value { font-size: 15px; font-weight: 400; color: #fff; }
+    .result-row.deduction .result-value { color: #ff9f0a; }
+
+    .divider-line {
+      border: none;
+      border-top: 0.5px solid #3a3a3c;
+      margin: 8px 0;
+    }
+
+    .result-row.net .result-label { font-size: 14px; color: #fff; font-weight: 500; }
+    .result-row.net .result-value { font-size: 22px; color: #30d158; font-weight: 300; }
+
+    .console-hint {
+      text-align: center;
+      font-size: 11px;
+      color: #3a3a3c;
+      margin-top: 1rem;
+      letter-spacing: 0.04em;
+    }
+
+    /* Button grid */
+    .btn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .btn {
+      aspect-ratio: 1;
+      border: none;
+      border-radius: 50%;
+      font-size: 20px;
+      font-weight: 400;
+      cursor: default;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .btn.gray   { background: #636366; }
+    .btn.dark   { background: #333335; }
+    .btn.orange { background: #ff9f0a; }
+    .btn.wide   {
+      grid-column: span 2;
+      border-radius: 40px;
+      aspect-ratio: unset;
+      padding: 0 1.5rem;
+      justify-content: flex-start;
+      font-size: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="screen">
+    <div class="screen-label">Payroll · 2-Week Period</div>
+
+    <div id="results">
+      <div class="inputs-summary" id="inputs-text"></div>
+
+      <div class="result-row">
+        <span class="result-label">Gross Pay</span>
+        <span class="result-value" id="out-gross"></span>
+      </div>
+      <div class="result-row deduction">
+        <span class="result-label">Uncle Sam's Share</span>
+        <span class="result-value" id="out-tax"></span>
+      </div>
+      <hr class="divider-line" />
+      <div class="result-row net">
+        <span class="result-label">Net Pay</span>
+        <span class="result-value" id="out-net"></span>
+      </div>
+
+      <p class="console-hint">open F12 → Console to see logs</p>
+    </div>
+  </div>
+
+  <!-- Decorative iPhone-style calculator buttons -->
+  <div class="btn-grid">
+    <div class="btn gray" style="font-size:15px;">AC</div>
+    <div class="btn gray" style="font-size:15px;">+/-</div>
+    <div class="btn gray" style="font-size:15px;">%</div>
+    <div class="btn orange">÷</div>
+
+    <div class="btn dark">7</div>
+    <div class="btn dark">8</div>
+    <div class="btn dark">9</div>
+    <div class="btn orange">×</div>
+
+    <div class="btn dark">4</div>
+    <div class="btn dark">5</div>
+    <div class="btn dark">6</div>
+    <div class="btn orange">−</div>
+
+    <div class="btn dark">1</div>
+    <div class="btn dark">2</div>
+    <div class="btn dark">3</div>
+    <div class="btn orange">+</div>
+
+    <div class="btn dark wide">0</div>
+    <div class="btn dark">.</div>
+    <div class="btn orange">=</div>
+  </div>
+</div>
+
+<script>
+  // --- Step 1: Gather inputs via prompt() ---
+  // prompt() returns strings, so Number() casts each to a numeric value
+  const hourlyPay  = Number(prompt("Enter your hourly pay:\n(Example: 14.50)"));
+  const hoursPerWk = Number(prompt("Enter hours worked per week:\n(Example: 32)"));
+  const taxRate    = Number(prompt("Enter your tax rate as a decimal:\n(Example: 0.20 for 20%)"));
+
+  // --- Step 2: Perform all calculations ONCE ---
+  const totalHours = hoursPerWk * 2;
+  const grossPay   = hourlyPay * totalHours;
+  const taxAmount  = grossPay * taxRate;
+  const netPay     = grossPay - taxAmount;
+
+  // --- Step 3: Format as currency strings ---
+  const fGross = "$" + grossPay.toFixed(2);
+  const fTax   = "$" + taxAmount.toFixed(2);
+  const fNet   = "$" + netPay.toFixed(2);
+
+  // --- Step 4: One alert() displaying all results ---
+  alert("Gross Pay: " + fGross + "\nUncle Sam's Share: " + fTax + "\nNet Pay: " + fNet);
+
+  // --- Step 5: Three console.log() calls ---
+  console.log("Gross Pay: "         + fGross);
+  console.log("Uncle Sam's Share: " + fTax);
+  console.log("Net Pay: "           + fNet);
+
+  // --- Extra Challenge: Display results on the HTML page ---
+  document.getElementById("inputs-text").innerHTML =
+    "$" + hourlyPay.toFixed(2) + "/hr &nbsp;·&nbsp; " +
+    hoursPerWk + " hrs/wk &nbsp;·&nbsp; " +
+    (taxRate * 100).toFixed(0) + "% tax";
+
+  document.getElementById("out-gross").textContent = fGross;
+  document.getElementById("out-tax").textContent   = fTax;
+  document.getElementById("out-net").textContent   = fNet;
+
+  document.getElementById("results").style.display = "block";
+</script>
+
+</body>
+</html>
